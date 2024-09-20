@@ -1,0 +1,13 @@
+[package]
+name = "chrono-slots"
+version = "0.1.0"
+edition = "2021"
+authors = ["daichiyoshimura"]
+description = "A library to find available time slots"
+license = "MIT"
+repository = "https://github.com/daichiyoshimura/chrono-slots.git"
+
+[dependencies]
+chrono = "0.4"
+chrono-tz = "0.6"
+thiserror = "1.0"

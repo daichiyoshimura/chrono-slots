@@ -1,0 +1,172 @@
+use std::fmt::Debug;
+
+use thiserror::Error;
+
+use chrono::DateTime;
+use chrono_tz::Tz;
+
+use super::block::Block;
+use super::slot::Slot;
+
+#[derive(Debug, Error)]
+pub enum PeriodError {
+    #[error("Start time must be before end time.")]
+    InvalidTime,
+}
+
+pub trait Period {
+    fn start(&self) -> DateTime<Tz>;
+    fn end(&self) -> DateTime<Tz>;
+
+    fn duration(&self) -> (i64, i64) {
+        let duration = self.end() - self.start();
+        (duration.num_hours(), duration.num_minutes() % 60)
+    }
+
+    fn to_string(&self) -> String {
+        let (hours, minutes) = self.duration();
+        format!(
+            "start: {}, end: {}, duration: {}h {}m",
+            self.start().format("%Y-%m-%d %H:%M:%S"),
+            self.end().format("%Y-%m-%d %H:%M:%S"),
+            hours,
+            minutes
+        )
+    }
+}
+
+pub trait Input: Period {
+    fn to_block(&self) -> Block;
+}
+
+pub trait Output: Period {
+    fn create_from_slot(slot: Slot) -> Self;
+}
+
+pub trait PeriodVec {
+    fn to_string(&self) -> String;
+}
+
+impl<T> PeriodVec for Vec<T>
+where
+    T: Period,
+{
+    fn to_string(&self) -> String {
+        self.iter()
+            .map(|period| period.to_string())
+            .collect::<Vec<_>>()
+            .join("\n ")
+    }
+}
+
+#[macro_export]
+macro_rules! impl_period {
+    ($t:ty) => {
+        impl Period for $t {
+            fn start(&self) -> DateTime<Tz> {
+                self.start
+            }
+
+            fn end(&self) -> DateTime<Tz> {
+                self.end
+            }
+        }
+    };
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use chrono::{Duration, Utc};
+
+    fn dt(now: DateTime<Tz>, hours: i64) -> DateTime<Tz> {
+        now + Duration::hours(hours)
+    }
+
+    fn block(now: DateTime<Tz>, start: i64, end: i64) -> Block {
+        Block::new(dt(now, start), dt(now, end)).unwrap()
+    }
+
+    struct TestCase<T> {
+        name: &'static str,
+        input: T,
+        expected_duration: (i64, i64),
+        expected_string: String,
+    }
+
+    #[test]
+    fn test_period_methods() {
+        let now = Utc::now().with_timezone(&chrono_tz::Japan);
+        let block = &block(now, 0, 8);
+        let cases = vec![TestCase {
+            name: "Basic case 3 hour duration",
+            input: block,
+            expected_duration: (8, 0),
+            expected_string: format!(
+                "start: {}, end: {}, duration: 8h 0m",
+                block.start().format("%Y-%m-%d %H:%M:%S"),
+                block.end().format("%Y-%m-%d %H:%M:%S")
+            ),
+        }];
+
+        for case in cases {
+            let duration = case.input.duration();
+            let result_string = case.input.to_string();
+
+            assert_eq!(
+                duration, case.expected_duration,
+                "Failed on duration: {}",
+                case.name
+            );
+            assert_eq!(
+                result_string, case.expected_string,
+                "Failed on to_string: {}",
+                case.name
+            );
+        }
+    }
+
+    #[test]
+    fn test_invalid_block_creation() {
+        let now = Utc::now().with_timezone(&chrono_tz::Japan);
+
+        let valid_block = Block::new(dt(now, 0), dt(now, 8));
+        assert!(valid_block.is_ok(), "Valid block creation failed");
+
+        let invalid_block = Block::new(dt(now, 0), dt(now, 0));
+        assert!(invalid_block.is_err(), "Invalid block creation should fail");
+    }
+
+    #[test]
+    fn test_period_vec_to_string() {
+        let now = Utc::now().with_timezone(&chrono_tz::Japan);
+
+        let periods = vec![block(now, 0, 1), block(now, 3, 4), block(now, 5, 6)];
+
+        let period_strings = periods.to_string();
+
+        let expected_strings = vec![
+            format!(
+                "start: {}, end: {}, duration: 1h 0m",
+                periods[0].start().format("%Y-%m-%d %H:%M:%S"),
+                periods[0].end().format("%Y-%m-%d %H:%M:%S"),
+            ),
+            format!(
+                "start: {}, end: {}, duration: 1h 0m",
+                periods[1].start().format("%Y-%m-%d %H:%M:%S"),
+                periods[1].end().format("%Y-%m-%d %H:%M:%S"),
+            ),
+            format!(
+                "start: {}, end: {}, duration: 1h 0m",
+                periods[2].start().format("%Y-%m-%d %H:%M:%S"),
+                periods[2].end().format("%Y-%m-%d %H:%M:%S"),
+            ),
+        ]
+        .join("\n ");
+
+        assert_eq!(
+            period_strings, expected_strings,
+            "PeriodVec to_string failed"
+        );
+    }
+}
