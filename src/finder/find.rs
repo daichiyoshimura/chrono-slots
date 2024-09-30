@@ -4,6 +4,7 @@ use crate::periods::{
     span::Span,
 };
 
+// Calculate available time slots (Output). Provide the scheduled block (Input) and the target period (Span).
 pub fn find<In: Input, Out: Output>(
     span: Span,
     mut inputs: Vec<In>,
@@ -16,7 +17,7 @@ pub fn find<In: Input, Out: Output>(
         let block = input.to_block()?;
 
         if block.contains(&target) {
-            target.terminate();
+            target.eliminate();
             break;
         }
 
@@ -35,7 +36,7 @@ pub fn find<In: Input, Out: Output>(
         if block.overlaps_at_end(&target) {
             let slot = Slot::create_from(&target, &block)?;
             slots.push(Out::create_from_slot(slot));
-            target.terminate();
+            target.eliminate();
             break;
         }
     }

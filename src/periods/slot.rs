@@ -11,6 +11,7 @@ use super::{
     span::Span,
 };
 
+/// This refers to available free time. The term ‘Slot’ will be standardized here.
 #[derive(Debug, Clone)]
 pub struct Slot {
     start: DateTime<Tz>,
@@ -20,6 +21,8 @@ pub struct Slot {
 impl_period!(Slot);
 
 impl Slot {
+
+    /// constructor
     pub fn new(start: DateTime<Tz>, end: DateTime<Tz>) -> Result<Self, PeriodError> {
         if start >= end {
             return Err(PeriodError::InvalidTime);
@@ -27,6 +30,7 @@ impl Slot {
         Ok(Slot { start, end })
     }
 
+    /// constructor
     pub fn create_from(target: &Span, block: &Block) -> Result<Self, PeriodError> {
         if target.start() > block.start() {
             return Err(PeriodError::InvalidTime);

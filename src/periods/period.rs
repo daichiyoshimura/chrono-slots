@@ -29,15 +29,15 @@ impl Error for PeriodError {
 
 const DATETIME_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
 
+/// This is an interface representing a period. Block, Span, and Slot all implement the Period interface.
 pub trait Period {
+    /// Start time of the period.
     fn start(&self) -> DateTime<Tz>;
+
+    /// End time of the period.
     fn end(&self) -> DateTime<Tz>;
 
-    fn duration(&self) -> (i64, i64) {
-        let duration = self.end() - self.start();
-        (duration.num_hours(), duration.num_minutes() % 60)
-    }
-
+    /// Represents the start time and end time as strings.
     fn to_string(&self) -> String {
         let duration = self.end() - self.start();
         let (hours, minutes) = (duration.num_hours(), duration.num_minutes() % 60);
@@ -51,15 +51,21 @@ pub trait Period {
     }
 }
 
+/// input of find
 pub trait Input: Period {
+    /// To convert internally, define the map function for your input
     fn to_block(&self) -> Result<Block, PeriodError>;
 }
 
+/// output of find
 pub trait Output: Period {
+    /// To convert internally, define the map function for your output
     fn create_from_slot(slot: Slot) -> Self;
 }
 
+/// Vec<Period>
 pub trait PeriodVec {
+    /// Represents the start time and end time as strings.
     fn to_string(&self) -> String;
 }
 
@@ -67,6 +73,7 @@ impl<T> PeriodVec for Vec<T>
 where
     T: Period,
 {
+    /// Represents the start time and end time as strings.
     fn to_string(&self) -> String {
         self.iter()
             .map(|period| period.to_string())
@@ -79,10 +86,12 @@ where
 macro_rules! impl_period {
     ($t:ty) => {
         impl Period for $t {
+            /// Start time of the period.
             fn start(&self) -> DateTime<Tz> {
                 self.start
             }
 
+            /// End time of the period.
             fn end(&self) -> DateTime<Tz> {
                 self.end
             }

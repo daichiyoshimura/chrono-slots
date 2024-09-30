@@ -11,6 +11,7 @@ use super::{
     slot::Slot,
 };
 
+/// This is the period for searching for free time. The term ‘Span’ will be standardized here. Note that the Span is mutable.
 #[derive(Debug, Clone)]
 pub struct Span {
     start: DateTime<Tz>,
@@ -20,6 +21,8 @@ pub struct Span {
 impl_period!(Span);
 
 impl Span {
+
+    /// constructor
     pub fn new(start: DateTime<Tz>, end: DateTime<Tz>) -> Result<Self, PeriodError> {
         if start >= end {
             return Err(PeriodError::InvalidTime);
@@ -27,18 +30,22 @@ impl Span {
         Ok(Span { start, end })
     }
 
+    /// Whether there is remaining time in the period.
     pub fn remain(&self) -> bool {
         self.start < self.end
     }
 
+    /// Shorten the period. (This assumes sorting, so it shortens from the start time)
     pub fn shorten(&mut self, other: &Block) {
         self.start = other.end()
     }
 
-    pub fn terminate(&mut self) {
+    /// Eliminate the period.
+    pub fn eliminate(&mut self) {
         self.start = self.end
     }
 
+    /// Convert the Span into a Slot.
     pub fn to_slot(&self) -> Result<Slot, PeriodError> {
         Slot::new(self.start(), self.end())
     }
@@ -57,7 +64,7 @@ mod tests {
         if start >= end {
             let mut s = Span::new(dt(now, start), dt(now, end + 8))?;
             s.shorten(&Block::new(dt(now, start), dt(now, end + 8))?);
-            s.terminate();
+            s.eliminate();
             return Ok(s);
         }
         Span::new(dt(now, start), dt(now, end))
