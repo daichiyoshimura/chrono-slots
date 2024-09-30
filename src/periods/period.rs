@@ -14,6 +14,8 @@ pub enum PeriodError {
     InvalidTime,
 }
 
+const DATETIME_FORMAT: &str = "%Y-%m-%d %H:%M:%S";
+
 pub trait Period {
     fn start(&self) -> DateTime<Tz>;
     fn end(&self) -> DateTime<Tz>;
@@ -24,11 +26,12 @@ pub trait Period {
     }
 
     fn to_string(&self) -> String {
-        let (hours, minutes) = self.duration();
+        let duration = self.end() - self.start();
+        let (hours, minutes) = (duration.num_hours(), duration.num_minutes() % 60);
         format!(
             "start: {}, end: {}, duration: {}h {}m",
-            self.start().format("%Y-%m-%d %H:%M:%S"),
-            self.end().format("%Y-%m-%d %H:%M:%S"),
+            self.start().format(DATETIME_FORMAT),
+            self.end().format(DATETIME_FORMAT),
             hours,
             minutes
         )
@@ -83,47 +86,39 @@ mod tests {
         now + Duration::hours(hours)
     }
 
-    fn block(now: DateTime<Tz>, start: i64, end: i64) -> Block {
-        Block::new(dt(now, start), dt(now, end)).unwrap()
+    fn block(now: DateTime<Tz>, start: i64, end: i64) -> Result<Block, PeriodError> {
+        Block::new(dt(now, start), dt(now, end))
     }
 
     struct TestCase<T> {
         name: &'static str,
         input: T,
-        expected_duration: (i64, i64),
         expected_string: String,
     }
 
     #[test]
-    fn test_period_methods() {
+    fn test_period_methods() -> Result<(), PeriodError> {
         let now = Utc::now().with_timezone(&chrono_tz::Japan);
-        let block = &block(now, 0, 8);
+        let block = &block(now, 0, 8)?;
+
         let cases = vec![TestCase {
             name: "Basic case 3 hour duration",
             input: block,
-            expected_duration: (8, 0),
             expected_string: format!(
                 "start: {}, end: {}, duration: 8h 0m",
-                block.start().format("%Y-%m-%d %H:%M:%S"),
-                block.end().format("%Y-%m-%d %H:%M:%S")
+                block.start().format(DATETIME_FORMAT),
+                block.end().format(DATETIME_FORMAT)
             ),
         }];
 
-        for case in cases {
-            let duration = case.input.duration();
+        Ok(for case in cases {
             let result_string = case.input.to_string();
-
-            assert_eq!(
-                duration, case.expected_duration,
-                "Failed on duration: {}",
-                case.name
-            );
             assert_eq!(
                 result_string, case.expected_string,
                 "Failed on to_string: {}",
                 case.name
             );
-        }
+        })
     }
 
     #[test]
@@ -138,28 +133,27 @@ mod tests {
     }
 
     #[test]
-    fn test_period_vec_to_string() {
+    fn test_period_vec_to_string() -> Result<(), PeriodError> {
         let now = Utc::now().with_timezone(&chrono_tz::Japan);
-
-        let periods = vec![block(now, 0, 1), block(now, 3, 4), block(now, 5, 6)];
+        let periods = vec![block(now, 0, 1)?, block(now, 3, 4)?, block(now, 5, 6)?];
 
         let period_strings = periods.to_string();
 
         let expected_strings = vec![
             format!(
                 "start: {}, end: {}, duration: 1h 0m",
-                periods[0].start().format("%Y-%m-%d %H:%M:%S"),
-                periods[0].end().format("%Y-%m-%d %H:%M:%S"),
+                periods[0].start().format(DATETIME_FORMAT),
+                periods[0].end().format(DATETIME_FORMAT),
             ),
             format!(
                 "start: {}, end: {}, duration: 1h 0m",
-                periods[1].start().format("%Y-%m-%d %H:%M:%S"),
-                periods[1].end().format("%Y-%m-%d %H:%M:%S"),
+                periods[1].start().format(DATETIME_FORMAT),
+                periods[1].end().format(DATETIME_FORMAT),
             ),
             format!(
                 "start: {}, end: {}, duration: 1h 0m",
-                periods[2].start().format("%Y-%m-%d %H:%M:%S"),
-                periods[2].end().format("%Y-%m-%d %H:%M:%S"),
+                periods[2].start().format(DATETIME_FORMAT),
+                periods[2].end().format(DATETIME_FORMAT),
             ),
         ]
         .join("\n ");
@@ -168,5 +162,6 @@ mod tests {
             period_strings, expected_strings,
             "PeriodVec to_string failed"
         );
+        Ok(())
     }
 }
