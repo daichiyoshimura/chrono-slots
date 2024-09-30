@@ -1,21 +1,13 @@
-use thiserror::Error;
-
 use crate::periods::{
     period::{Input, Output, PeriodError},
     slot::Slot,
     span::Span,
 };
 
-#[derive(Debug, Error)]
-pub enum SlotError {
-    #[error("Invalid blocks. Check your arguments are valid.")]
-    InvalidPeriod(#[from] PeriodError),
-}
-
 pub fn find<In: Input, Out: Output>(
     span: Span,
     mut inputs: Vec<In>,
-) -> Result<Vec<Out>, SlotError> {
+) -> Result<Vec<Out>, PeriodError> {
     inputs.sort_by_key(|p| p.start());
 
     let mut slots = Vec::new();
@@ -256,7 +248,7 @@ mod tests {
 
         // Iterate through each test case
         Ok(for case in test_cases {
-            let result: Result<Vec<MockOutput>, SlotError> =
+            let result: Result<Vec<MockOutput>, PeriodError> =
                 find(case.span.clone(), case.inputs.clone());
             match result {
                 Ok(slots) => {

@@ -1,7 +1,5 @@
 use chrono::{DateTime, Duration, Utc};
-use chrono_slots::{
-    find, Block, Input, Output, Period, PeriodError, PeriodVec, Slot, SlotError, Span,
-};
+use chrono_slots::{find, Block, Input, Output, Period, PeriodError, PeriodVec, Slot, Span};
 use chrono_tz::Tz;
 
 // Your struct
@@ -55,7 +53,7 @@ impl Output for AvailableSlot {
     }
 }
 
-fn main() -> Result<(), SlotError> {
+fn main() -> Result<(), PeriodError> {
     let now = Utc::now().with_timezone(&chrono_tz::Japan);
 
     // This variable will probably be retrieved from something like a request. Since this is an example, we’ll create it artificially.

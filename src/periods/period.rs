@@ -1,6 +1,6 @@
-use std::fmt::Debug;
+use std::fmt::{self, Debug};
 
-use thiserror::Error;
+use std::error::Error;
 
 use chrono::DateTime;
 use chrono_tz::Tz;
@@ -8,10 +8,23 @@ use chrono_tz::Tz;
 use super::block::Block;
 use super::slot::Slot;
 
-#[derive(Debug, Error)]
+#[derive(Debug)]
 pub enum PeriodError {
-    #[error("Start time must be before end time.")]
     InvalidTime,
+}
+
+impl fmt::Display for PeriodError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            PeriodError::InvalidTime => write!(f, "Start time must be before end time."),
+        }
+    }
+}
+
+impl Error for PeriodError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        None
+    }
 }
 
 const DATETIME_FORMAT: &str = "%Y-%m-%d %H:%M:%S";

@@ -10,4 +10,3 @@ repository = "https://github.com/daichiyoshimura/chrono-slots.git"
 [dependencies]
 chrono = "0.4"
 chrono-tz = "0.6"
-thiserror = "1.0"
