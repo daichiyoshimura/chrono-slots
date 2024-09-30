@@ -21,7 +21,6 @@ pub struct Span {
 impl_period!(Span);
 
 impl Span {
-
     /// constructor
     pub fn new(start: DateTime<Tz>, end: DateTime<Tz>) -> Result<Self, PeriodError> {
         if start >= end {

@@ -21,7 +21,6 @@ pub struct Slot {
 impl_period!(Slot);
 
 impl Slot {
-
     /// constructor
     pub fn new(start: DateTime<Tz>, end: DateTime<Tz>) -> Result<Self, PeriodError> {
         if start >= end {
