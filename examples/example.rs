@@ -1,5 +1,5 @@
 use chrono::{DateTime, Duration, Utc};
-use chrono_slots::{find, Block, Input, Output, Period, PeriodVec, Slot, Span};
+use chrono_slots::{find, Block, Input, Output, Period, PeriodError, PeriodVec, Slot, Span};
 use chrono_tz::Tz;
 
 // Your struct
@@ -21,8 +21,8 @@ impl Period for ScheduledEvent {
 
 // To convert internally, define the map function for your output
 impl Input for ScheduledEvent {
-    fn to_block(&self) -> Block {
-        Block::new(self.start_at, self.end_at).unwrap()
+    fn to_block(&self) -> Result<Block, PeriodError> {
+        Block::new(self.start_at, self.end_at)
     }
 }
 

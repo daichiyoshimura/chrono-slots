@@ -21,7 +21,7 @@ pub fn find<In: Input, Out: Output>(
     let mut slots = Vec::new();
     let mut target = span.clone();
     for input in inputs {
-        let block = input.to_block();
+        let block = input.to_block()?;
 
         if block.contains(&target) {
             target.terminate();
@@ -34,23 +34,15 @@ pub fn find<In: Input, Out: Output>(
         }
 
         if block.is_contained_in(&target) {
-            match Slot::create_from(&target, &block) {
-                Ok(slot) => {
-                    slots.push(Out::create_from_slot(slot));
-                }
-                Err(e) => return Err(SlotError::InvalidPeriod(e)),
-            }
+            let slot = Slot::create_from(&target, &block)?;
+            slots.push(Out::create_from_slot(slot));
             target.shorten(&block);
             continue;
         }
 
         if block.overlaps_at_end(&target) {
-            match Slot::create_from(&target, &block) {
-                Ok(slot) => {
-                    slots.push(Out::create_from_slot(slot));
-                }
-                Err(e) => return Err(SlotError::InvalidPeriod(e)),
-            }
+            let slot = Slot::create_from(&target, &block)?;
+            slots.push(Out::create_from_slot(slot));
             target.terminate();
             break;
         }
@@ -60,7 +52,8 @@ pub fn find<In: Input, Out: Output>(
         return Ok(slots);
     }
 
-    slots.push(Out::create_from_slot(target.to_slot().unwrap()));
+    let slot = target.to_slot()?;
+    slots.push(Out::create_from_slot(slot));
     Ok(slots)
 }
 
@@ -99,8 +92,8 @@ mod tests {
     }
 
     impl Input for MockInput {
-        fn to_block(&self) -> Block {
-            Block::new(self.start_at, self.end_at).unwrap()
+        fn to_block(&self) -> Result<Block, PeriodError> {
+            Block::new(self.start_at, self.end_at)
         }
     }
 

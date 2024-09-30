@@ -36,7 +36,7 @@ pub trait Period {
 }
 
 pub trait Input: Period {
-    fn to_block(&self) -> Block;
+    fn to_block(&self) -> Result<Block, PeriodError>;
 }
 
 pub trait Output: Period {
