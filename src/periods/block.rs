@@ -55,12 +55,12 @@ mod tests {
     use chrono::{Duration, Utc};
     use chrono_tz::Tz;
 
-    fn block(now: DateTime<Tz>, start: i64, end: i64) -> Block {
-        Block::new(now + Duration::hours(start), now + Duration::hours(end)).unwrap()
+    fn block(now: DateTime<Tz>, start: i64, end: i64) -> Result<Block, PeriodError> {
+        Block::new(now + Duration::hours(start), now + Duration::hours(end))
     }
 
-    fn span(now: DateTime<Tz>, start: i64, end: i64) -> Span {
-        Span::new(now + Duration::hours(start), now + Duration::hours(end)).unwrap()
+    fn span(now: DateTime<Tz>, start: i64, end: i64) -> Result<Span, PeriodError> {
+        Span::new(now + Duration::hours(start), now + Duration::hours(end))
     }
 
     struct TestCase<T> {
@@ -71,25 +71,25 @@ mod tests {
     }
 
     #[test]
-    fn test_block_methods() {
+    fn test_block_methods() -> Result<(), PeriodError> {
         let now = Utc::now().with_timezone(&chrono_tz::Japan);
         let cases_contains = vec![
             TestCase {
                 name: "Block contains Span",
-                block: block(now, 0, 8),
-                span: span(now, 1, 7),
+                block: block(now, 0, 8)?,
+                span: span(now, 1, 7)?,
                 expected: true,
             },
             TestCase {
                 name: "Block does not contain Span (span starts before block)",
-                block: block(now, 9, 12),
-                span: span(now, 0, 8),
+                block: block(now, 9, 12)?,
+                span: span(now, 0, 8)?,
                 expected: false,
             },
             TestCase {
                 name: "Block does not contain Span (span ends after block)",
-                block: block(now, 10, 12),
-                span: span(now, 0, 8),
+                block: block(now, 10, 12)?,
+                span: span(now, 0, 8)?,
                 expected: false,
             },
         ];
@@ -97,20 +97,20 @@ mod tests {
         let cases_is_contained_in = vec![
             TestCase {
                 name: "Block is contained in Span",
-                block: block(now, 1, 7),
-                span: span(now, 0, 8),
+                block: block(now, 1, 7)?,
+                span: span(now, 0, 8)?,
                 expected: true,
             },
             TestCase {
                 name: "Block is not contained in Span (span starts after block)",
-                block: block(now, 0, 4),
-                span: span(now, 5, 7),
+                block: block(now, 0, 4)?,
+                span: span(now, 5, 7)?,
                 expected: false,
             },
             TestCase {
                 name: "Block is not contained in Span (span ends before block)",
-                block: block(now, 7, 8),
-                span: span(now, 5, 6),
+                block: block(now, 7, 8)?,
+                span: span(now, 5, 6)?,
                 expected: false,
             },
         ];
@@ -118,14 +118,14 @@ mod tests {
         let cases_overlaps_at_start = vec![
             TestCase {
                 name: "Block overlaps at start of Span",
-                block: block(now, 1, 5),
-                span: span(now, 4, 8),
+                block: block(now, 1, 5)?,
+                span: span(now, 4, 8)?,
                 expected: true,
             },
             TestCase {
                 name: "Block does not overlap at start of Span (block entirely before span)",
-                block: block(now, 1, 5),
-                span: span(now, 6, 8),
+                block: block(now, 1, 5)?,
+                span: span(now, 6, 8)?,
                 expected: false,
             },
         ];
@@ -133,14 +133,14 @@ mod tests {
         let cases_overlaps_at_end = vec![
             TestCase {
                 name: "Block overlaps at end of Span",
-                block: block(now, 10, 20),
-                span: span(now, 5, 15),
+                block: block(now, 10, 20)?,
+                span: span(now, 5, 15)?,
                 expected: true,
             },
             TestCase {
                 name: "Block does not overlap at end of Span (block entirely after span)",
-                block: block(now, 10, 20),
-                span: span(now, 0, 8),
+                block: block(now, 10, 20)?,
+                span: span(now, 0, 8)?,
                 expected: false,
             },
         ];
@@ -172,32 +172,28 @@ mod tests {
             );
         }
 
-        for case in cases_overlaps_at_end {
+        Ok(for case in cases_overlaps_at_end {
             assert_eq!(
                 case.block.overlaps_at_end(&case.span),
                 case.expected,
                 "{} failed",
                 case.name
             );
-        }
+        })
     }
 
     #[test]
     fn test_block_new() {
         let now = Utc::now().with_timezone(&chrono_tz::Japan);
 
-        fn start(now: DateTime<Tz>, start: i64) -> DateTime<Tz> {
+        fn dt(now: DateTime<Tz>, start: i64) -> DateTime<Tz> {
             now + Duration::hours(start)
         }
 
-        fn end(now: DateTime<Tz>, start: i64) -> DateTime<Tz> {
-            now + Duration::hours(start)
-        }
-
-        let valid_block = Block::new(start(now, 0), end(now, 8));
+        let valid_block = Block::new(dt(now, 0), dt(now, 8));
         assert!(valid_block.is_ok(), "Valid block creation failed");
 
-        let invalid_block = Block::new(start(now, 8), end(now, 0));
+        let invalid_block = Block::new(dt(now, 8), dt(now, 0));
         assert!(invalid_block.is_err(), "Invalid block creation should fail");
     }
 }

@@ -53,26 +53,26 @@ mod tests {
         now + Duration::hours(hours)
     }
 
-    fn span(now: DateTime<Tz>, start: i64, end: i64) -> Span {
+    fn span(now: DateTime<Tz>, start: i64, end: i64) -> Result<Span, PeriodError> {
         if start >= end {
-            let mut s = Span::new(dt(now, start), dt(now, end + 8)).unwrap();
-            s.shorten(&Block::new(dt(now, start), dt(now, end + 8)).unwrap());
+            let mut s = Span::new(dt(now, start), dt(now, end + 8))?;
+            s.shorten(&Block::new(dt(now, start), dt(now, end + 8))?);
             s.terminate();
-            return s;
+            return Ok(s);
         }
-        Span::new(dt(now, start), dt(now, end)).unwrap()
+        Span::new(dt(now, start), dt(now, end))
     }
 
-    fn slot(now: DateTime<Tz>, start: i64, end: i64) -> Slot {
-        Slot::new(dt(now, start), dt(now, end)).unwrap()
+    fn slot(now: DateTime<Tz>, start: i64, end: i64) -> Result<Slot, PeriodError> {
+        Slot::new(dt(now, start), dt(now, end))
     }
 
-    fn block(now: DateTime<Tz>, start: i64, end: i64) -> Block {
-        Block::new(dt(now, start), dt(now, end)).unwrap()
+    fn block(now: DateTime<Tz>, start: i64, end: i64) -> Result<Block, PeriodError> {
+        Block::new(dt(now, start), dt(now, end))
     }
 
     #[test]
-    fn test_span_to_slot() {
+    fn test_span_to_slot() -> Result<(), PeriodError> {
         let now = Utc::now().with_timezone(&chrono_tz::Japan);
 
         struct TestCase {
@@ -83,17 +83,17 @@ mod tests {
         let cases = vec![
             TestCase {
                 name: "valid",
-                span: span(now, 0, 8),
-                result: Ok(slot(now, 0, 8)),
+                span: span(now, 0, 8)?,
+                result: slot(now, 0, 8),
             },
             TestCase {
                 name: "invalid",
-                span: span(now, 0, 0),
+                span: span(now, 0, 0)?,
                 result: Err(PeriodError::InvalidTime),
             },
         ];
 
-        for case in cases {
+        Ok(for case in cases {
             let span = case.span.clone();
             match span.to_slot() {
                 Ok(slot) => {
@@ -113,11 +113,11 @@ mod tests {
                     );
                 }
             }
-        }
+        })
     }
 
     #[test]
-    fn test_span_remain() {
+    fn test_span_remain() -> Result<(), PeriodError> {
         let now = Utc::now().with_timezone(&chrono_tz::Japan);
         struct TestCase {
             name: &'static str,
@@ -127,17 +127,17 @@ mod tests {
         let cases = vec![
             TestCase {
                 name: "valid",
-                span: span(now, 0, 8),
+                span: span(now, 0, 8)?,
                 expected: true,
             },
             TestCase {
                 name: "terminateped",
-                span: span(now, 0, 0),
+                span: span(now, 0, 0)?,
                 expected: false,
             },
         ];
 
-        for case in cases {
+        Ok(for case in cases {
             let span = case.span.clone();
             assert_eq!(
                 span.remain(),
@@ -145,11 +145,11 @@ mod tests {
                 "Test case failed: {}",
                 case.name
             );
-        }
+        })
     }
 
     #[test]
-    fn test_span_shorten() {
+    fn test_span_shorten() -> Result<(), PeriodError> {
         let now = Utc::now().with_timezone(&chrono_tz::Japan);
         struct TestCase {
             name: &'static str,
@@ -160,19 +160,19 @@ mod tests {
         let cases = vec![
             TestCase {
                 name: "shorten",
-                span: span(now, 0, 8),
-                block: block(now, 3, 4),
-                expected: span(now, 4, 8),
+                span: span(now, 0, 8)?,
+                block: block(now, 3, 4)?,
+                expected: span(now, 4, 8)?,
             },
             TestCase {
                 name: "terminateped",
-                span: span(now, 0, 8),
-                block: block(now, 0, 8),
-                expected: span(now, 0, 0),
+                span: span(now, 0, 8)?,
+                block: block(now, 0, 8)?,
+                expected: span(now, 0, 0)?,
             },
         ];
 
-        for case in cases {
+        Ok(for case in cases {
             let mut span = case.span.clone();
             span.shorten(&case.block);
             assert_eq!(
@@ -187,6 +187,6 @@ mod tests {
                 "Test case failed: {}",
                 case.name
             );
-        }
+        })
     }
 }

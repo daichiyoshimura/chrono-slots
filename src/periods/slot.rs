@@ -47,20 +47,20 @@ mod tests {
         now + Duration::hours(hours)
     }
 
-    fn block(now: DateTime<Tz>, start: i64, end: i64) -> Block {
-        Block::new(dt(now, start), dt(now, end)).unwrap()
+    fn block(now: DateTime<Tz>, start: i64, end: i64) -> Result<Block, PeriodError> {
+        Block::new(dt(now, start), dt(now, end))
     }
 
-    fn span(now: DateTime<Tz>, start: i64, end: i64) -> Span {
-        Span::new(dt(now, start), dt(now, end)).unwrap()
+    fn span(now: DateTime<Tz>, start: i64, end: i64) -> Result<Span, PeriodError> {
+        Span::new(dt(now, start), dt(now, end))
     }
 
-    fn slot(now: DateTime<Tz>, start: i64, end: i64) -> Slot {
-        Slot::new(dt(now, start), dt(now, end)).unwrap()
+    fn slot(now: DateTime<Tz>, start: i64, end: i64) -> Result<Slot, PeriodError> {
+        Slot::new(dt(now, start), dt(now, end))
     }
 
     #[test]
-    fn test_slot_create_from() {
+    fn test_slot_create_from() -> Result<(), PeriodError> {
         let now = Utc::now().with_timezone(&chrono_tz::Japan);
 
         struct TestCase {
@@ -73,19 +73,19 @@ mod tests {
         let cases = vec![
             TestCase {
                 name: "Valid Slot creation from Span and Block",
-                span: span(now, 0, 8),
-                block: block(now, 4, 9),
-                expected: Ok(slot(now, 0, 4)),
+                span: span(now, 0, 8)?,
+                block: block(now, 4, 9)?,
+                expected: Ok(slot(now, 0, 4)?),
             },
             TestCase {
                 name: "Invalid Slot creation (Span starts after Block)",
-                span: span(now, 4, 8),
-                block: block(now, 1, 5),
+                span: span(now, 4, 8)?,
+                block: block(now, 1, 5)?,
                 expected: Err(PeriodError::InvalidTime),
             },
         ];
 
-        for case in cases {
+        Ok(for case in cases {
             let result = Slot::create_from(&case.span, &case.block);
             match &result {
                 Ok(actual) => {
@@ -107,6 +107,6 @@ mod tests {
                     );
                 }
             }
-        }
+        })
     }
 }

@@ -1,5 +1,7 @@
 use chrono::{DateTime, Duration, Utc};
-use chrono_slots::{find, Block, Input, Output, Period, PeriodError, PeriodVec, Slot, Span};
+use chrono_slots::{
+    find, Block, Input, Output, Period, PeriodError, PeriodVec, Slot, SlotError, Span,
+};
 use chrono_tz::Tz;
 
 // Your struct
@@ -53,11 +55,11 @@ impl Output for AvailableSlot {
     }
 }
 
-fn main() {
+fn main() -> Result<(), SlotError> {
     let now = Utc::now().with_timezone(&chrono_tz::Japan);
 
     // This variable will probably be retrieved from something like a request. Since this is an example, we’ll create it artificially.
-    let span = Span::new(now + Duration::hours(0), now + Duration::hours(8)).unwrap();
+    let span = Span::new(now + Duration::hours(0), now + Duration::hours(8))?;
     println!("Span:\n {}\n", span.to_string());
 
     // This variable will probably be retrieved from something like a database record. Since this is an example, we’ll create it artificially.
@@ -74,6 +76,7 @@ fn main() {
     println!("Blocks:\n {}\n", events.to_string());
 
     // Find available time slots!
-    let slots: Vec<AvailableSlot> = find(span, events).unwrap();
+    let slots: Vec<AvailableSlot> = find(span, events)?;
     println!("Slots:\n {}\n", slots.to_string());
+    Ok(())
 }

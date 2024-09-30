@@ -132,8 +132,12 @@ mod tests {
     }
 
     #[test]
-    fn test_find() {
+    fn test_find() -> Result<(), PeriodError> {
         let now = Utc::now().with_timezone(&chrono_tz::Japan);
+
+        fn span(now: DateTime<Tz>, start: i64, end: i64) -> Result<Span, PeriodError> {
+            Span::new(now + Duration::hours(start), now + Duration::hours(end))
+        }
 
         // Test cases
         struct TestCase {
@@ -148,42 +152,42 @@ mod tests {
             TestCase {
                 description: "No blocks",
                 inputs: vec![],
-                span: Span::new(now + Duration::hours(0), now + Duration::hours(8)).unwrap(),
+                span: span(now, 0, 8)?,
                 expected_slots: vec![MockOutput::new(now, 0, 8)],
                 should_error: false,
             },
             TestCase {
                 description: "One block before slot",
                 inputs: vec![MockInput::new(now, -2, -1)],
-                span: Span::new(now + Duration::hours(0), now + Duration::hours(8)).unwrap(),
+                span: span(now, 0, 8)?,
                 expected_slots: vec![MockOutput::new(now, 0, 8)],
                 should_error: false,
             },
             TestCase {
                 description: "One block before slot boundary",
                 inputs: vec![MockInput::new(now, -1, 0)],
-                span: Span::new(now + Duration::hours(0), now + Duration::hours(8)).unwrap(),
+                span: span(now, 0, 8)?,
                 expected_slots: vec![MockOutput::new(now, 0, 8)],
                 should_error: false,
             },
             TestCase {
                 description: "One block with overlap at start",
                 inputs: vec![MockInput::new(now, -1, 0)],
-                span: Span::new(now + Duration::hours(0), now + Duration::hours(8)).unwrap(),
+                span: span(now, 0, 8)?,
                 expected_slots: vec![MockOutput::new(now, 0, 8)],
                 should_error: false,
             },
             TestCase {
                 description: "One block with overlap at start boundary",
                 inputs: vec![MockInput::new(now, 0, 1)],
-                span: Span::new(now + Duration::hours(0), now + Duration::hours(8)).unwrap(),
+                span: span(now, 0, 8)?,
                 expected_slots: vec![MockOutput::new(now, 1, 8)],
                 should_error: false,
             },
             TestCase {
                 description: "One block is contained in slot",
                 inputs: vec![MockInput::new(now, 1, 5)],
-                span: Span::new(now + Duration::hours(0), now + Duration::hours(8)).unwrap(),
+                span: span(now, 0, 8)?,
                 expected_slots: vec![MockOutput::new(now, 0, 1), MockOutput::new(now, 5, 8)],
                 should_error: false,
             },
@@ -191,49 +195,49 @@ mod tests {
                 description:
                     "One block is contained in slot boundary (= One block contains slot boundary)",
                 inputs: vec![MockInput::new(now, 0, 8)],
-                span: Span::new(now + Duration::hours(0), now + Duration::hours(8)).unwrap(),
+                span: span(now, 0, 8)?,
                 expected_slots: vec![],
                 should_error: false,
             },
             TestCase {
                 description: "One block contains slot",
                 inputs: vec![MockInput::new(now, -1, 9)],
-                span: Span::new(now + Duration::hours(0), now + Duration::hours(8)).unwrap(),
+                span: span(now, 0, 8)?,
                 expected_slots: vec![],
                 should_error: false,
             },
             TestCase {
                 description: "One block with overlap at end boundary",
                 inputs: vec![MockInput::new(now, 3, 8)],
-                span: Span::new(now + Duration::hours(0), now + Duration::hours(8)).unwrap(),
+                span: span(now, 0, 8)?,
                 expected_slots: vec![MockOutput::new(now, 0, 3)],
                 should_error: false,
             },
             TestCase {
                 description: "One block with overlap at end",
                 inputs: vec![MockInput::new(now, 3, 9)],
-                span: Span::new(now + Duration::hours(0), now + Duration::hours(8)).unwrap(),
+                span: span(now, 0, 8)?,
                 expected_slots: vec![MockOutput::new(now, 0, 3)],
                 should_error: false,
             },
             TestCase {
                 description: "One block after slot boundary",
                 inputs: vec![MockInput::new(now, 8, 10)],
-                span: Span::new(now + Duration::hours(0), now + Duration::hours(8)).unwrap(),
+                span: span(now, 0, 8)?,
                 expected_slots: vec![MockOutput::new(now, 0, 8)],
                 should_error: false,
             },
             TestCase {
                 description: "One block after slot",
                 inputs: vec![MockInput::new(now, 9, 10)],
-                span: Span::new(now + Duration::hours(0), now + Duration::hours(8)).unwrap(),
+                span: span(now, 0, 8)?,
                 expected_slots: vec![MockOutput::new(now, 0, 8)],
                 should_error: false,
             },
             TestCase {
                 description: "Two blocks are contained in slot",
                 inputs: vec![MockInput::new(now, 1, 2), MockInput::new(now, 6, 7)],
-                span: Span::new(now + Duration::hours(0), now + Duration::hours(8)).unwrap(),
+                span: span(now, 0, 8)?,
                 expected_slots: vec![
                     MockOutput::new(now, 0, 1),
                     MockOutput::new(now, 2, 6),
@@ -244,14 +248,14 @@ mod tests {
             TestCase {
                 description: "Two blocks overlap each other and are contained in slot",
                 inputs: vec![MockInput::new(now, 1, 4), MockInput::new(now, 2, 5)],
-                span: Span::new(now + Duration::hours(0), now + Duration::hours(8)).unwrap(),
+                span: span(now, 0, 8)?,
                 expected_slots: vec![MockOutput::new(now, 0, 1), MockOutput::new(now, 5, 8)],
                 should_error: false,
             },
         ];
 
         // Iterate through each test case
-        for case in test_cases {
+        Ok(for case in test_cases {
             let result: Result<Vec<MockOutput>, SlotError> =
                 find(case.span.clone(), case.inputs.clone());
             match result {
@@ -272,6 +276,6 @@ mod tests {
                     assert!(case.should_error, "{}", case.description);
                 }
             }
-        }
+        })
     }
 }
